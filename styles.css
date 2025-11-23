@@ -1,0 +1,14 @@
+:root{--bg:#f7f9fc;--card:#fff;--accent:#184e77;--muted:#666}
+*{box-sizing:border-box;font-family:Inter,Segoe UI,Helvetica,Arial}
+body{background:var(--bg);margin:0;padding:24px}
+.container{max-width:900px;margin:0 auto}
+h1{color:var(--accent);margin-bottom:8px}
+.card{background:var(--card);padding:16px;border-radius:10px;box-shadow:0 6px 18px rgba(20,20,20,0.06);margin:12px 0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+label{display:flex;flex-direction:column;font-size:13px;color:var(--muted)}
+input[type=number],input[type=file]{padding:8px;border-radius:6px;border:1px solid #ddd}
+button{padding:10px 14px;border-radius:8px;border:0;background:var(--accent);color:#fff;cursor:pointer}
+button:hover{opacity:0.95}
+.result{margin-top:12px;padding:10px;border-radius:8px;background:#fbfdff;border:1px solid #e7f0ff;min-height:36px}
+footer{margin-top:18px;color:var(--muted)}
+code{background:#f0f3f6;padding:2px 6px;border-radius:4px}
