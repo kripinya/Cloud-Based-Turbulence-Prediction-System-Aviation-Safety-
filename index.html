@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Turbulence Predictor </title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:#f7f8fb; color:#111; padding:24px; }
+    .card { max-width:720px; margin:28px auto; background:#fff; border-radius:12px; box-shadow:0 6px 20px rgba(15,20,40,0.06); padding:20px; }
+    h1 { margin:0 0 8px 0; font-size:20px; }
+    p.lead { margin:0 0 18px 0; color:#555; font-size:14px; }
+    .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+    label { display:block; font-size:13px; color:#333; margin-bottom:6px; }
+    input[type="number"], input[type="text"] { width:100%; padding:8px 10px; border:1px solid #e0e4ee; border-radius:8px; font-size:14px; box-sizing:border-box; }
+    .full { grid-column:1/-1; }
+    button { background:#0b66ff; color:white; padding:10px 14px; border-radius:10px; border:none; font-weight:600; cursor:pointer; }
+    .result { margin-top:16px; padding:12px; border-radius:8px; background:#f1f7ff; }
+    .badge { font-weight:700; padding:6px 10px; border-radius:999px; display:inline-block; }
+    .low { background:#e6f7ea; color:#1f7a3a; }
+    .moderate { background:#fff7df; color:#a06a00; }
+    .severe { background:#ffecec; color:#8b1c1c; }
+    .small { font-size:13px; color:#555; margin-top:8px; }
+    .error { color:#8b1c1c; margin-top:12px; font-weight:600; }
+    footer { text-align:center; font-size:12px; color:#777; margin-top:18px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Turbulence Predictor</h1>
+    <p class="lead">Enter atmospheric readings below and click <strong>Predict</strong>. This sends the data to the local prediction API (Flask) and displays severity + confidence.</p>
+
+    <form id="predict-form">
+      <div class="grid">
+        <div>
+          <label for="wind_speed_10m">Wind speed (10m) m/s</label>
+          <input id="wind_speed_10m" name="wind_speed_10m" type="number" step="any" value="5.2" required>
+        </div>
+
+        <div>
+          <label for="wind_speed_100m">Wind speed (100m) m/s</label>
+          <input id="wind_speed_100m" name="wind_speed_100m" type="number" step="any" value="12.1" required>
+        </div>
+
+        <div>
+          <label for="wind_shear">Wind shear (100m - 10m) m/s</label>
+          <input id="wind_shear" name="wind_shear" type="number" step="any" value="6.9" required>
+        </div>
+
+        <div>
+          <label for="relative_humidity_2m">Relative humidity (%)</label>
+          <input id="relative_humidity_2m" name="relative_humidity_2m" type="number" step="any" value="72" required>
+        </div>
+
+        <div>
+          <label for="cloud_cover">Cloud cover (%)</label>
+          <input id="cloud_cover" name="cloud_cover" type="number" step="any" value="80" required>
+        </div>
+
+        <div>
+          <label for="surface_pressure">Surface pressure (hPa)</label>
+          <input id="surface_pressure" name="surface_pressure" type="number" step="any" value="995.2" required>
+        </div>
+
+        <div class="full">
+          <label for="dewpt_dep">Dewpoint depression (°C) — <small>dewpt_dep</small></label>
+          <input id="dewpt_dep" name="dewpt_dep" type="number" step="any" value="1.2" required>
+        </div>
+
+      </div>
+
+      <div style="margin-top:14px; display:flex; gap:10px; align-items:center;">
+        <button type="submit">Predict</button>
+        <div id="spinner" style="display:none;color:#0b66ff;">⏳ predicting...</div>
+      </div>
+    </form>
+
+    <div id="output" class="result" style="display:none;">
+      <div id="pred-badge" class="badge"></div>
+      <div id="pred-confidence" class="small"></div>
+      <div id="pred-prob" class="small"></div>
+    </div>
+
+    <div id="err" class="error" style="display:none;"></div>
+
+    <footer>Local demo — API: <code>http://127.0.0.1:8000/predict</code></footer>
+  </div>
+
+<script>
+const form = document.getElementById('predict-form');
+const out = document.getElementById('output');
+const err = document.getElementById('err');
+const spinner = document.getElementById('spinner');
+const predBadge = document.getElementById('pred-badge');
+const predConfidence = document.getElementById('pred-confidence');
+const predProb = document.getElementById('pred-prob');
+
+form.addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  err.style.display = 'none';
+  out.style.display = 'none';
+  spinner.style.display = 'inline-block';
+
+  const data = {
+    wind_speed_10m: parseFloat(document.getElementById('wind_speed_10m').value),
+    wind_speed_100m: parseFloat(document.getElementById('wind_speed_100m').value),
+    wind_shear: parseFloat(document.getElementById('wind_shear').value),
+    relative_humidity_2m: parseFloat(document.getElementById('relative_humidity_2m').value),
+    cloud_cover: parseFloat(document.getElementById('cloud_cover').value),
+    surface_pressure: parseFloat(document.getElementById('surface_pressure').value),
+    dewpt_dep: parseFloat(document.getElementById('dewpt_dep').value)
+  };
+
+  try {
+    const resp = await fetch('http://127.0.0.1:8000/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(`API error: ${resp.status} — ${text}`);
+    }
+
+    const j = await resp.json();
+    // API returns { predictions: [...], confidence: [...] }
+    const pred = Array.isArray(j.predictions) ? j.predictions[0] : j.predictions;
+    const conf = Array.isArray(j.confidence) ? j.confidence[0] : j.confidence;
+
+    // style and text
+    predBadge.textContent = pred;
+    predBadge.className = 'badge ' + (pred.toLowerCase() === 'severe' ? 'severe' : (pred.toLowerCase() === 'moderate' ? 'moderate' : 'low'));
+    predConfidence.textContent = `Confidence: ${(conf * 100).toFixed(1)}%`;
+    predProb.textContent = `Raw score: ${conf.toFixed(3)}`;
+
+    out.style.display = 'block';
+  } catch (e) {
+    err.textContent = e.message;
+    err.style.display = 'block';
+  } finally {
+    spinner.style.display = 'none';
+  }
+});
+</script>
+</body>
+</html>
