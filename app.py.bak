@@ -1,0 +1,68 @@
+# app.py
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from joblib import load
+import numpy as np
+import logging
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger("turb-app")
+
+app = Flask(__name__)
+CORS(app)   # allow local frontend to call this API
+
+scaler = load("model_artifacts/scaler.joblib")
+model  = load("model_artifacts/rf_model.joblib")
+
+# try to infer expected features from scaler
+if hasattr(scaler, "feature_names_in_"):
+    FEATURES = list(scaler.feature_names_in_)
+else:
+    # fallback: use the set we know (should match scaler)
+    FEATURES = ["wind_speed_10m","wind_speed_100m","wind_shear",
+                "relative_humidity_2m","cloud_cover","surface_pressure","dewpt_dep"]
+
+log.info("Expected features: %s", FEATURES)
+
+@app.route("/predict", methods=["POST"])
+def predict():
+    try:
+        data = request.get_json(force=True)
+        if data is None:
+            return jsonify({"error": "Missing JSON body"}), 400
+
+        if isinstance(data, dict):
+            rows = [data]
+        elif isinstance(data, list):
+            rows = data
+        else:
+            return jsonify({"error": "JSON must be an object or an array of objects"}), 400
+
+        # validate keys and convert to numeric
+        validated = []
+        for i, r in enumerate(rows):
+            missing = [f for f in FEATURES if f not in r]
+            if missing:
+                return jsonify({"error": f"Input missing features: {missing}", "index": i}), 400
+            # convert types
+            row = []
+            try:
+                for f in FEATURES:
+                    row.append(float(r[f]))
+            except Exception as exc:
+                return jsonify({"error": f"Invalid value for feature {f}: {r.get(f)}"}), 400
+            validated.append(row)
+
+        X = np.array(validated)
+        Xs = scaler.transform(X)
+        preds = model.predict(Xs).tolist()
+        probs = model.predict_proba(Xs).max(axis=1).tolist()
+
+        return jsonify({"predictions": preds, "confidence": probs})
+    except Exception as e:
+        log.exception("Prediction error")
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == "__main__":
+    # debug True is fine for local demo; remove for prod
+    app.run(host="0.0.0.0", port=8000, debug=True)

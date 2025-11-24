@@ -1,0 +1,218 @@
+# app.py  -- REPLACE your existing app.py with this file
+import os
+import logging
+from logging.handlers import RotatingFileHandler
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
+import joblib
+import numpy as np
+from typing import Any
+
+# ---------- CONFIG ----------
+MODEL_DIR = "model_artifacts"
+LOG_DIR = "logs"
+LOG_FILE = os.path.join(LOG_DIR, "flask.log")
+HOST = "127.0.0.1"   # change to "0.0.0.0" if you want external access
+PORT = int(os.environ.get("PORT", 8000))
+# ----------------------------
+
+os.makedirs(LOG_DIR, exist_ok=True)
+if not os.path.isdir(MODEL_DIR):
+    os.makedirs(MODEL_DIR, exist_ok=True)
+
+# ---------- Logging ----------
+logger = logging.getLogger("turb-app")
+logger.setLevel(logging.INFO)
+fmt = logging.Formatter("%(asctime)s %(levelname)s %(name)s - %(message)s")
+
+# console
+ch = logging.StreamHandler()
+ch.setFormatter(fmt)
+logger.addHandler(ch)
+
+# rotating file
+fh = RotatingFileHandler(LOG_FILE, maxBytes=5_000_000, backupCount=5)
+fh.setFormatter(fmt)
+logger.addHandler(fh)
+# ----------------------------
+
+app = Flask(__name__, static_folder="static")
+CORS(app)
+
+def safe_load(path: str) -> Any:
+    """Load a joblib artifact safely and return None on failure (and log)."""
+    if not os.path.exists(path):
+        logger.info("Model file not found: %s", path)
+        return None
+    try:
+        obj = joblib.load(path)
+        logger.info("Loaded: %s", path)
+        return obj
+    except Exception as e:
+        logger.exception("Failed loading %s: %s", path, e)
+        return None
+
+# Try common artifact names (you can add more)
+scaler = safe_load(os.path.join(MODEL_DIR, "scaler.joblib"))
+rf_pipeline = safe_load(os.path.join(MODEL_DIR, "model_rf_pipeline.joblib"))
+rf_simple   = safe_load(os.path.join(MODEL_DIR, "rf_model.joblib"))
+xgb_bundle  = safe_load(os.path.join(MODEL_DIR, "model_xgb_joblib.pkl"))  # could be pipeline or (imputer,clf)
+# fallback names
+if rf_pipeline is None and safe_load(os.path.join(MODEL_DIR, "model_rf.joblib")):
+    rf_pipeline = safe_load(os.path.join(MODEL_DIR, "model_rf.joblib"))
+
+RF_MODEL = rf_pipeline if rf_pipeline is not None else rf_simple
+XGB_MODEL = xgb_bundle
+
+# Determine FEATURES list (try scaler, then RF_MODEL, else fallback default)
+DEFAULT_FEATURES = ["wind_speed_10m","wind_speed_100m","wind_shear",
+                    "relative_humidity_2m","cloud_cover","surface_pressure","dewpt_dep"]
+
+def infer_features():
+    if scaler is not None and hasattr(scaler, "feature_names_in_"):
+        return list(getattr(scaler, "feature_names_in_"))
+    if RF_MODEL is not None:
+        if hasattr(RF_MODEL, "feature_names_in_"):
+            return list(getattr(RF_MODEL, "feature_names_in_"))
+        # pipeline with named steps might expose final estimator
+        if hasattr(RF_MODEL, "named_steps"):
+            for step in RF_MODEL.named_steps.values():
+                if hasattr(step, "feature_names_in_"):
+                    return list(getattr(step, "feature_names_in_"))
+    return DEFAULT_FEATURES
+
+FEATURES = infer_features()
+logger.info("Available models: RF=%s, XGB=%s", RF_MODEL is not None, XGB_MODEL is not None)
+logger.info("Expected features: %s", FEATURES)
+
+# --------- endpoints ----------
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({
+        "status": "ok",
+        "models": {"rf": RF_MODEL is not None, "xgb": XGB_MODEL is not None},
+        "features": FEATURES
+    })
+
+@app.route("/models", methods=["GET"])
+def models():
+    return jsonify({
+        "rf_model": bool(RF_MODEL),
+        "xgb_model": bool(XGB_MODEL),
+        "feature_list": FEATURES
+    })
+
+@app.route("/predict", methods=["POST"])
+def predict():
+    """
+    Accept JSON object or list-of-objects. Each object may include "model":"rf"|"xgb"|"both".
+    Example:
+      {"model":"rf", "wind_speed_10m":5.2, ...}
+      OR
+      [{"model":"rf", ...}, {"model":"xgb", ...}]
+    """
+    try:
+        data = request.get_json(force=True)
+        if data is None:
+            return jsonify({"error":"Missing JSON body"}), 400
+
+        rows = [data] if isinstance(data, dict) else data if isinstance(data, list) else None
+        if rows is None:
+            return jsonify({"error":"JSON must be object or array"}), 400
+
+        validated = []
+        model_choices = []
+        for i, r in enumerate(rows):
+            if not isinstance(r, dict):
+                return jsonify({"error":f"Row {i} is not an object"}), 400
+            model_choice = r.get("model", "rf").lower()
+            if model_choice not in ("rf","xgb","both"):
+                return jsonify({"error":f"Invalid model '{model_choice}' at index {i}"}), 400
+            model_choices.append(model_choice)
+
+            missing = [f for f in FEATURES if f not in r]
+            if missing:
+                return jsonify({"error":f"Missing features {missing} at index {i}"}), 400
+
+            rowvals = []
+            for f in FEATURES:
+                try:
+                    rowvals.append(float(r[f]))
+                except Exception:
+                    return jsonify({"error":f"Invalid numeric for feature {f} at index {i}"}), 400
+            validated.append(rowvals)
+
+        X = np.array(validated)  # shape (n, d)
+
+        # RF predictions (if available)
+        rf_preds_all = None
+        rf_probs_all = None
+        if RF_MODEL is not None:
+            try:
+                # RF_MODEL might be a pipeline expecting raw features
+                rf_preds_all = RF_MODEL.predict(X)
+                if hasattr(RF_MODEL, "predict_proba"):
+                    rf_probs_all = RF_MODEL.predict_proba(X).max(axis=1)
+                else:
+                    rf_probs_all = [None]*len(rf_preds_all)
+            except Exception as e:
+                logger.exception("RF predict failed: %s", e)
+                rf_preds_all = None
+                rf_probs_all = None
+
+        # XGB predictions (if available)
+        xgb_preds_all = None
+        xgb_probs_all = None
+        if XGB_MODEL is not None:
+            try:
+                # possible types: pipeline, (imputer, clf), or raw clf
+                if hasattr(XGB_MODEL, "predict"):
+                    xgb_preds_all = XGB_MODEL.predict(X)
+                    xgb_probs_all = XGB_MODEL.predict_proba(X).max(axis=1) if hasattr(XGB_MODEL, "predict_proba") else [None]*len(xgb_preds_all)
+                elif isinstance(XGB_MODEL, (list, tuple)) and len(XGB_MODEL) >= 2:
+                    imp, clf = XGB_MODEL[0], XGB_MODEL[1]
+                    X_imp = imp.transform(X)
+                    xgb_preds_all = clf.predict(X_imp)
+                    xgb_probs_all = clf.predict_proba(X_imp).max(axis=1)
+                else:
+                    xgb_preds_all = None
+            except Exception as e:
+                logger.exception("XGB predict failed: %s", e)
+                xgb_preds_all = None
+
+        # construct response per input row
+        results = []
+        for idx, choice in enumerate(model_choices):
+            out = {}
+            if choice in ("rf","both"):
+                if rf_preds_all is None:
+                    out["rf_error"] = "RF model not available or failed"
+                else:
+                    out["rf_prediction"] = int(rf_preds_all[idx])
+                    out["rf_confidence"] = float(rf_probs_all[idx]) if rf_probs_all is not None else None
+            if choice in ("xgb","both"):
+                if xgb_preds_all is None:
+                    out["xgb_error"] = "XGB model not available or failed"
+                else:
+                    out["xgb_prediction"] = int(xgb_preds_all[idx])
+                    out["xgb_confidence"] = float(xgb_probs_all[idx]) if xgb_probs_all is not None else None
+            results.append(out)
+
+        return jsonify({"results": results})
+    except Exception as e:
+        logger.exception("Prediction error")
+        return jsonify({"error": str(e)}), 500
+
+# static routes (frontend)
+@app.route("/", methods=["GET"])
+def index():
+    return send_from_directory(app.static_folder, "index.html")
+
+@app.route("/<path:filename>", methods=["GET"])
+def static_files(filename):
+    return send_from_directory(app.static_folder, filename)
+
+if __name__ == "__main__":
+    logger.info("Starting Flask app on %s:%d", HOST, PORT)
+    # debug True for local development; set to False for production
+    app.run(host=HOST, port=PORT, debug=True)

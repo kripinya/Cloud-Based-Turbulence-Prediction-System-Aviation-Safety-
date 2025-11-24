@@ -1,0 +1,227 @@
+Last login: Sun Nov 23 15:21:19 on ttys012
+ananyakarn@Ananyas-MacBook-Air-2 ~ % cd /Users/ananyakarn/turbulence_project
+ananyakarn@Ananyas-MacBook-Air-2 turbulence_project % 
+ananyakarn@Ananyas-MacBook-Air-2 turbulence_project % python3 -m venv ~/turbulence-venv && source ~/turbulence-venv/bin/activate && echo "VENV_ACTIVE: $VIRTUAL_ENV"
+VENV_ACTIVE: /Users/ananyakarn/turbulence-venv
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 turbulence_project % pip install joblib scikit-learn numpy scipy pandas
+Collecting joblib
+  Using cached joblib-1.5.2-py3-none-any.whl.metadata (5.6 kB)
+Collecting scikit-learn
+  Using cached scikit_learn-1.7.2-cp314-cp314-macosx_12_0_arm64.whl.metadata (11 kB)
+Collecting numpy
+  Using cached numpy-2.3.5-cp314-cp314-macosx_14_0_arm64.whl.metadata (62 kB)
+Collecting scipy
+  Using cached scipy-1.16.3-cp314-cp314-macosx_14_0_arm64.whl.metadata (62 kB)
+Collecting pandas
+  Using cached pandas-2.3.3-cp314-cp314-macosx_11_0_arm64.whl.metadata (91 kB)
+Collecting threadpoolctl>=3.1.0 (from scikit-learn)
+  Using cached threadpoolctl-3.6.0-py3-none-any.whl.metadata (13 kB)
+Collecting python-dateutil>=2.8.2 (from pandas)
+  Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+Collecting pytz>=2020.1 (from pandas)
+  Using cached pytz-2025.2-py2.py3-none-any.whl.metadata (22 kB)
+Collecting tzdata>=2022.7 (from pandas)
+  Using cached tzdata-2025.2-py2.py3-none-any.whl.metadata (1.4 kB)
+Collecting six>=1.5 (from python-dateutil>=2.8.2->pandas)
+  Using cached six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+Using cached joblib-1.5.2-py3-none-any.whl (308 kB)
+Using cached scikit_learn-1.7.2-cp314-cp314-macosx_12_0_arm64.whl (8.6 MB)
+Using cached numpy-2.3.5-cp314-cp314-macosx_14_0_arm64.whl (5.1 MB)
+Using cached scipy-1.16.3-cp314-cp314-macosx_14_0_arm64.whl (20.9 MB)
+Using cached pandas-2.3.3-cp314-cp314-macosx_11_0_arm64.whl (10.8 MB)
+Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+Using cached pytz-2025.2-py2.py3-none-any.whl (509 kB)
+Using cached six-1.17.0-py2.py3-none-any.whl (11 kB)
+Using cached threadpoolctl-3.6.0-py3-none-any.whl (18 kB)
+Using cached tzdata-2025.2-py2.py3-none-any.whl (347 kB)
+Installing collected packages: pytz, tzdata, threadpoolctl, six, numpy, joblib, scipy, python-dateutil, scikit-learn, pandas
+Successfully installed joblib-1.5.2 numpy-2.3.5 pandas-2.3.3 python-dateutil-2.9.0.post0 pytz-2025.2 scikit-learn-1.7.2 scipy-1.16.3 six-1.17.0 threadpoolctl-3.6.0 tzdata-2025.2
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 turbulence_project % pip install joblib scikit-learn numpy scipy pandas
+Requirement already satisfied: joblib in /Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages (1.5.2)
+Requirement already satisfied: scikit-learn in /Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages (1.7.2)
+Requirement already satisfied: numpy in /Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages (2.3.5)
+Requirement already satisfied: scipy in /Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages (1.16.3)
+Requirement already satisfied: pandas in /Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages (2.3.3)
+Requirement already satisfied: threadpoolctl>=3.1.0 in /Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages (from scikit-learn) (3.6.0)
+Requirement already satisfied: python-dateutil>=2.8.2 in /Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages (from pandas) (2.9.0.post0)
+Requirement already satisfied: pytz>=2020.1 in /Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages (from pandas) (2025.2)
+Requirement already satisfied: tzdata>=2022.7 in /Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages (from pandas) (2025.2)
+Requirement already satisfied: six>=1.5 in /Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages (from python-dateutil>=2.8.2->pandas) (1.17.0)
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 turbulence_project % python3 - <<'PY'
+from joblib import load
+import pandas as pd, traceback, sys, os
+
+p = "model_artifacts/model_rf_pipeline.joblib"
+print("Checking file:", p, "exists?", os.path.exists(p))
+try:
+    m = load(p)
+except Exception as e:
+    print("ERROR_LOADING:", e)
+    traceback.print_exc()
+    sys.exit(1)
+
+print("\nTYPE:", type(m))
+print("Named steps:", list(getattr(m, "named_steps", {}).keys()))
+print("pipeline.n_features_in_:", getattr(m, "n_features_in_", None))
+print("pipeline.feature_names_in_:", getattr(m, "feature_names_in_", None))
+
+sample = pd.DataFrame([{
+    "lat": 28.6,
+    "lon": 77.2,
+    "hour": 14,
+    "dayofyear": 120,
+    "TPI": 12.3,
+    "lat_bin": 28,
+    "lon_bin": 77
+}])
+print("\nSample row:", sample.to_dict(orient='records')[0])
+
+try:
+    preds = m.predict(sample)
+    print("\npredict() ->", preds)
+    if hasattr(m, "predict_proba"):
+        print("predict_proba() ->", m.predict_proba(sample).tolist())
+except Exception as e:
+    print("\nERROR during predict:", e)
+    traceback.print_exc()
+PY
+Checking file: model_artifacts/model_rf_pipeline.joblib exists? True
+
+TYPE: <class 'sklearn.pipeline.Pipeline'>
+Named steps: ['impute', 'scale', 'rf']
+pipeline.n_features_in_: None
+pipeline.feature_names_in_: None
+
+Sample row: {'lat': 28.6, 'lon': 77.2, 'hour': 14, 'dayofyear': 120, 'TPI': 12.3, 'lat_bin': 28, 'lon_bin': 77}
+
+ERROR during predict: Pipeline is not fitted yet.
+Traceback (most recent call last):
+  File "/Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages/sklearn/pipeline.py", line 53, in _raise_or_warn_if_not_fitted
+    yield
+  File "/Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages/sklearn/pipeline.py", line 788, in predict
+    Xt = transform.transform(Xt)
+  File "/Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages/sklearn/utils/_set_output.py", line 316, in wrapped
+    data_to_wrap = f(self, X, *args, **kwargs)
+  File "/Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages/sklearn/impute/_base.py", line 623, in transform
+    check_is_fitted(self)
+    ~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages/sklearn/utils/validation.py", line 1754, in check_is_fitted
+    raise NotFittedError(msg % {"name": type(estimator).__name__})
+sklearn.exceptions.NotFittedError: This SimpleImputer instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<stdin>", line 30, in <module>
+  File "/Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages/sklearn/pipeline.py", line 783, in predict
+    with _raise_or_warn_if_not_fitted(self):
+         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages/sklearn/pipeline.py", line 55, in _raise_or_warn_if_not_fitted
+    raise NotFittedError("Pipeline is not fitted yet.") from exc
+sklearn.exceptions.NotFittedError: Pipeline is not fitted yet.
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 turbulence_project % cd /Users/ananyakarn/turbulence_project
+sha256sum model_artifacts/model_rf_pipeline.joblib > /tmp/local_model.sha256
+cat /tmp/local_model.sha256
+399955f5ec785c3b3e45def2234bf69f126b07395df8297aaf4d5fb036f186c7  model_artifacts/model_rf_pipeline.joblib
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 turbulence_project % cd /Users/ananyakarn/turbulence_project
+mkdir -p backups
+cp model_artifacts/model_rf_pipeline.joblib backups/model_rf_pipeline.joblib.$(date +%s)
+ls -lh backups
+total 4672
+-rw-r--r--@ 1 ananyakarn  staff   2.3M 23 Nov 15:42 model_rf_pipeline.joblib.1763892778
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 turbulence_project % scp -i ~/Downloads/Ananya-2.pem ubuntu@13.201.82.204:~/turbulence_api/turbulence_project/model_artifacts/model_rf_pipeline.joblib /Users/ananyakarn/turbulence_project/model_artifacts/
+model_rf_pipeline.joblib                               100% 2336KB   1.1MB/s   00:02    
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 turbulence_project % sha256sum /Users/ananyakarn/turbulence_project/model_artifacts/model_rf_pipeline.joblib
+09c75564c7b0825ec0ed62c83702b4c31067bc744adf2ccf6728069351b73388  /Users/ananyakarn/turbulence_project/model_artifacts/model_rf_pipeline.joblib
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 turbulence_project % ssh -i ~/Downloads/Ananya-2.pem ubuntu@13.201.82.204 'sha256sum ~/turbulence_api/turbulence_project/model_artifacts/model_rf_pipeline.joblib'
+09c75564c7b0825ec0ed62c83702b4c31067bc744adf2ccf6728069351b73388  /home/ubuntu/turbulence_api/turbulence_project/model_artifacts/model_rf_pipeline.joblib
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 turbulence_project % source ~/turbulence-venv/bin/activate
+python3 - <<'PY'
+from joblib import load
+import pandas as pd, os,sys,traceback
+p="model_artifacts/model_rf_pipeline.joblib"
+print("exists?", os.path.exists(p))
+try:
+    m = load(p)
+    print("Loaded model type:", type(m))
+    sample = pd.DataFrame([{"lat":28.6,"lon":77.2,"hour":14,"dayofyear":120,"TPI":12.3,"lat_bin":28,"lon_bin":77}])
+    preds = m.predict(sample)
+    print("predict ->", preds)
+    if hasattr(m,"predict_proba"):
+        print("predict_proba ->", m.predict_proba(sample).tolist())
+except Exception as e:
+    print("ERROR:", e)
+    traceback.print_exc()
+    sys.exit(1)
+PY
+exists? True
+Loaded model type: <class 'sklearn.pipeline.Pipeline'>
+/Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages/sklearn/utils/validation.py:2742: UserWarning: X has feature names, but SimpleImputer was fitted without feature names
+  warnings.warn(
+/Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages/sklearn/utils/validation.py:2749: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+predict -> ['Moderate']
+/Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages/sklearn/utils/validation.py:2742: UserWarning: X has feature names, but SimpleImputer was fitted without feature names
+  warnings.warn(
+/Users/ananyakarn/turbulence-venv/lib/python3.14/site-packages/sklearn/utils/validation.py:2749: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+predict_proba -> [[0.08, 0.5766666666666667, 0.3433333333333333]]
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 turbulence_project % cd ~
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 ~ % tar --sort=name -czf turbulence_release_with_screens.tar.gz turbulence_release_with_screens
+
+tar: Option --sort=name is not supported
+Usage:
+  List:    tar -tf <archive-filename>
+  Extract: tar -xf <archive-filename>
+  Create:  tar -cf <archive-filename> [filenames...]
+  Help:    tar --help
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 ~ % sha256sum turbulence_release_with_screens.tar.gz > turbulence_release_with_screens.tar.gz.sha256
+
+sha256sum: turbulence_release_with_screens.tar.gz: No such file or directory
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 ~ % sha256sum turbulence_release_with_screens.tar.gz
+ls -lh turbulence_release_with_screens.tar.gz
+ls -lh turbulence_release_with_screens | sed -n '1,200p'
+sha256sum: turbulence_release_with_screens.tar.gz: No such file or directory
+ls: turbulence_release_with_screens.tar.gz: No such file or directory
+ls: turbulence_release_with_screens: No such file or directory
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 ~ % sha256sum turbulence_release_with_screens.tar.gz > turbulence_release_with_screens.tar.gz.sha256
+
+sha256sum: turbulence_release_with_screens.tar.gz: No such file or directory
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 ~ % ssh -i ~/Downloads/Ananya-2.pem ubuntu@13.201.82.204 \
+' tar --sort=name -C "$HOME" -czf "$HOME/turbulence_release_with_screens.tar.gz" turbulence_release_with_screens \
+  && sha256sum "$HOME/turbulence_release_with_screens.tar.gz" \
+  && ls -lh "$HOME/turbulence_release_with_screens.tar.gz" \
+  && ls -lh "$HOME/turbulence_release_with_screens" | sed -n "1,200p" '
+9cc0293e619a0c11b1f44fc0597e3f00c338bcb98930bd6f4605fd6f00b2f1cd  /home/ubuntu/turbulence_release_with_screens.tar.gz
+-rw-rw-r-- 1 ubuntu ubuntu 1.7M Nov 23 10:17 /home/ubuntu/turbulence_release_with_screens.tar.gz
+total 24K
+-rw-rw-r-- 1 ubuntu ubuntu  349 Nov 23 09:54 README.md
+drwxrwxr-x 2 ubuntu ubuntu 4.0K Nov 23 09:54 aws_screenshots
+-rwxrwxr-x 1 ubuntu ubuntu  629 Nov 23 09:54 cleanup.sh
+drwxrwxr-x 2 ubuntu ubuntu 4.0K Nov 23 09:54 evidence
+drwxrwxr-x 2 ubuntu ubuntu 4.0K Nov 23 09:54 model_artifacts
+drwxrwxr-x 2 ubuntu ubuntu 4.0K Nov 23 09:54 src
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 ~ % scp -i ~/Downloads/Ananya-2.pem \
+ubuntu@13.201.82.204:/home/ubuntu/turbulence_release_with_screens.tar.gz \
+~/Downloads/
+turbulence_release_with_screens.tar.gz                 100% 1689KB 336.8KB/s   00:05    
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 ~ % scp -i ~/Downloads/Ananya-2.pem \
+ubuntu@13.201.82.204:/home/ubuntu/turbulence_release_with_screens.tar.gz.sha256 \
+~/Downloads/
+scp: /home/ubuntu/turbulence_release_with_screens.tar.gz.sha256: No such file or directory
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 ~ % scp -i ~/Downloads/Ananya-2.pem ubuntu@13.201.82.204:/home/ubuntu/turbulence_release_with_screens.tar.gz   ~/Downloads/
+scp -i ~/Downloads/Ananya-2.pem ubuntu@13.201.82.204:/home/ubuntu/turbulence_release_with_screens.tar.gz.sha256  ~/Downloads/
+turbulence_release_with_screens.tar.gz                 100% 1689KB 127.4KB/s   00:13    
+turbulence_release_with_screens.tar.gz.sha256          100%  118     1.0KB/s   00:00    
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 ~ % cd ~/Downloads
+sha256sum -c turbulence_release_with_screens.tar.gz.sha256
+sha256sum:  /home/ubuntu/turbulence_release_with_screens.tar.gz: No such file or directory
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 Downloads % sha256sum -c turbulence_release_with_screens.tar.gz.sha256
+sha256sum:  /home/ubuntu/turbulence_release_with_screens.tar.gz: No such file or directory
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 Downloads % sha256sum turbulence_release_with_screens.tar.gz > turbulence_release_with_screens.tar.gz.sha256
+sha256sum -c turbulence_release_with_screens.tar.gz.sha256
+turbulence_release_with_screens.tar.gz: OK
+(turbulence-venv) ananyakarn@Ananyas-MacBook-Air-2 Downloads % 
