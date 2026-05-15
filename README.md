@@ -1,4 +1,4 @@
-# 🛰️ Turbulence Insight: Cloud-Based Aviation Safety System
+# Turbulence Insight: Cloud-Based Aviation Safety System
 ### Advanced Turbulence Prediction using Satellite Data Ingestion and Machine Learning
 
 ![Dashboard Preview](https://img.shields.io/badge/Status-Operational-brightgreen)
@@ -6,7 +6,7 @@
 
 ---
 
-## 🔍 1. The Research Gap & Motivation
+## 1. The Research Gap & Motivation
 
 Turbulence remains one of the leading causes of non-fatal injuries in commercial aviation and significant operational costs due to rerouting and structural maintenance. 
 
@@ -19,29 +19,29 @@ Turbulence remains one of the leading causes of non-fatal injuries in commercial
 
 ---
 
-## 🛠️ 2. Core Functionalities
+## 2. Core Functionalities
 
 The system features a state-of-the-art **Interactive Dashboard** (Glassmorphism design) with four specialized analytical pathways:
 
-### 🚄 A. Instant Predict
+### A. Instant Predict
 *   **Purpose**: Real-time risk assessment for a specific flight coordinate.
 *   **Function**: Accepts atmospheric inputs (Temperature, Dewpoint, Surface Pressure, Wind Speeds) and returns a categorical risk level (**Low, Moderate, Severe**) with a confidence score.
 
-### 📊 B. Batch CSV Processing
+### B. Batch CSV Processing
 *   **Purpose**: Bulk analysis for post-flight verification or regional mapping.
 *   **Function**: Processes datasets containing thousands of records instantly. It provides a **Global Risk Profile** logic, calculating the percentage distribution of turbulence risks across the entire dataset.
 
-### 📐 C. Raw HDF5 Data Converter & Analyzer
+### C. Raw HDF5 Data Converter & Analyzer
 *   **Purpose**: Native ingestion of satellite-grade telemetry.
 *   **Function**: Bypasses manual preprocessing by allowing users to upload `.h5` files directly. The system extracts geospatial metadata, flattens the arrays into ML-ready formats, and generates an immediate **Turbulence Intensity Profile**.
 
-### 📡 D. Live MOSDAC Ingestion (MOSDAC-X)
+### D. Live MOSDAC Ingestion (MOSDAC-X)
 *   **Purpose**: Real-time forecasting and situational awareness.
 *   **Function**: Connects to the MOSDAC API skeleton to fetch live product metadata. It features a **scrolling data feed** and a **24-hour predictive forecast** trend, projecting future risks based on current atmospheric trends.
 
 ---
 
-## 🧠 3. Technical Implementation & Features
+## 3. Technical Implementation & Features
 
 ### Machine Learning Engine
 *   **Model**: Random Forest Classifier trained on expanded meteorological datasets.
@@ -57,7 +57,7 @@ The system features a state-of-the-art **Interactive Dashboard** (Glassmorphism 
 
 ---
 
-## 🚀 4. Setup & Installation
+## 4. Setup & Installation
 
 ### Option A: Using Docker (Recommended)
 ```bash
@@ -84,7 +84,7 @@ docker run -d -p 8080:8080 --name turbulence-api-container turbulence-api
 
 ---
 
-## 📈 5. API Endpoints Reference
+## 5. API Endpoints Reference
 
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |
@@ -96,7 +96,7 @@ docker run -d -p 8080:8080 --name turbulence-api-container turbulence-api
 
 ---
 
-## 🗺️ 6. Future Roadmap
+## 6. Future Roadmap
 *   **AWS Deployment**: Migration to ECS with Auto-scaling and S3-based artifact storage.
 *   **Dynamic GIS Overlay**: Integrating mapping libraries to visualize results over geographic flight paths.
 *   **Deep Learning (LSTM)**: Incorporating temporal sequences for improved forecasting Accuracy.
