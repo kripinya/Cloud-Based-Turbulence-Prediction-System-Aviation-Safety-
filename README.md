@@ -57,7 +57,36 @@ The system features a state-of-the-art **Interactive Dashboard** (Glassmorphism 
 
 ---
 
-## 4. Setup & Installation
+## 4. Project Structure
+
+```
+├── api/                          # Flask REST API (production)
+│   ├── app.py                    # Main application & endpoints
+│   ├── mosdac_client.py          # MOSDAC satellite data client
+│   ├── predict.py                # CLI prediction utility
+│   └── templates/
+│       └── index.html            # Dashboard UI
+├── training/                     # Model training pipeline
+│   ├── train_model.py            # RF model training script
+│   └── utils.py                  # Feature engineering & ERA5 data fetch
+├── data_pipeline/                # Satellite data ingestion
+│   ├── read_mosdac.py            # HDF5 batch reader
+│   ├── read_mosdac_stream.py     # Streaming HDF5 reader
+│   ├── process_mosdac_perfile.py # Per-file HDF5 processor
+│   └── simulate_stream.py       # API stream simulation
+├── model_artifacts/              # Trained model files (.gitignored)
+├── Dockerfile                    # Production container build
+├── .dockerignore
+├── .gitignore
+├── requirements.txt
+├── README.md
+├── DEPLOYMENT.md
+└── DOCUMENTATION.md
+```
+
+---
+
+## 5. Setup & Installation
 
 ### Option A: Using Docker (Recommended)
 ```bash
@@ -75,7 +104,7 @@ docker run -d -p 8080:8080 --name turbulence-api-container turbulence-api
     ```
 2.  **Generate Model Artifacts**:
     ```bash
-    python3 train_model.py
+    cd training && python3 train_model.py && cd ..
     ```
 3.  **Start Server**:
     ```bash
@@ -84,7 +113,7 @@ docker run -d -p 8080:8080 --name turbulence-api-container turbulence-api
 
 ---
 
-## 5. API Endpoints Reference
+## 6. API Endpoints Reference
 
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |
@@ -96,7 +125,7 @@ docker run -d -p 8080:8080 --name turbulence-api-container turbulence-api
 
 ---
 
-## 6. Future Roadmap
+## 7. Future Roadmap
 *   **AWS Deployment**: Migration to ECS with Auto-scaling and S3-based artifact storage.
 *   **Dynamic GIS Overlay**: Integrating mapping libraries to visualize results over geographic flight paths.
 *   **Deep Learning (LSTM)**: Incorporating temporal sequences for improved forecasting Accuracy.

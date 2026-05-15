@@ -19,9 +19,14 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report, confusion_matrix
 
-from utils import fetch_era5_hourly, make_features_and_labels
+try:
+    from training.utils import fetch_era5_hourly, make_features_and_labels
+except ImportError:
+    from utils import fetch_era5_hourly, make_features_and_labels
 
-MODEL_DIR = "model_artifacts"
+# Resolve model_artifacts relative to the project root (one level up from training/)
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODEL_DIR = os.path.join(_PROJECT_ROOT, "model_artifacts")
 os.makedirs(MODEL_DIR, exist_ok=True)
 
 def train_for_location(lat, lon, start_date, end_date, save_name="rf_model.joblib"):

@@ -1,5 +1,46 @@
-venv/
-__pycache__/
+# Version control
 .git/
+.gitignore
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+pyvenv.cfg
+
+# IDE
+.vscode/
+.idea/
+*.swp
 .DS_Store
-*.pyc
+
+# Logs
+*.log
+logs/
+
+# Data files (not needed in Docker image)
+*.csv
+*.csv.gz
+mosdac_data/
+processed_csv/
+
+# Build artifacts
+*.tar.gz
+*.sha256
+
+# Documentation (not needed at runtime)
+*.pdf
+*.md
+!requirements.txt
+
+# Training scripts (not needed in production image)
+training/
+data_pipeline/
+
+# Backup files
+*.bak
+*.bak.*
