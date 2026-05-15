@@ -76,12 +76,13 @@ For external integrations (e.g., in-flight tablets or external weather stations)
 {
   "rows": [
     {
-      "lat": 28.6,
-      "lon": 77.2,
+      "wind_speed_10m": 5.2,
+      "wind_speed_100m": 12.1,
       "temperature_2m": 25,
-      "wind_speed_100m": 12,
-      "wind_speed_10m": 5,
-      "surface_pressure": 1013
+      "dewpoint_2m": 20,
+      "relative_humidity_2m": 72,
+      "cloud_cover": 80,
+      "surface_pressure": 995.2
     }
   ]
 }

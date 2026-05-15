@@ -250,17 +250,21 @@
                     <h2>Single Point Analysis</h2>
                     <form id="instant-form">
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                            <div class="form-group"><label>Lat</label><input type="number" step="any" name="lat"
-                                    value="28.6"></div>
-                            <div class="form-group"><label>Lon</label><input type="number" step="any" name="lon"
-                                    value="77.2"></div>
-                            <div class="form-group"><label>Temp °C</label><input type="number" step="any"
+                            <div class="form-group"><label>Wind Speed 10m (m/s)</label><input type="number" step="any"
+                                    name="wind_speed_10m" value="5.2"></div>
+                            <div class="form-group"><label>Wind Speed 100m (m/s)</label><input type="number" step="any"
+                                    name="wind_speed_100m" value="12.1"></div>
+                            <div class="form-group"><label>Temperature 2m (°C)</label><input type="number" step="any"
                                     name="temperature_2m" value="25"></div>
-                            <div class="form-group"><label>Wind 100m</label><input type="number" step="any"
-                                    name="wind_speed_100m" value="12"></div>
+                            <div class="form-group"><label>Dewpoint 2m (°C)</label><input type="number" step="any"
+                                    name="dewpoint_2m" value="20"></div>
+                            <div class="form-group"><label>Relative Humidity (%)</label><input type="number" step="any"
+                                    name="relative_humidity_2m" value="72"></div>
+                            <div class="form-group"><label>Cloud Cover (%)</label><input type="number" step="any"
+                                    name="cloud_cover" value="80"></div>
                         </div>
-                        <div class="form-group"><label>Pressure (hPa)</label><input type="number" step="any"
-                                name="surface_pressure" value="1013"></div>
+                        <div class="form-group"><label>Surface Pressure (hPa)</label><input type="number" step="any"
+                                name="surface_pressure" value="995.2"></div>
                         <button type="submit" class="btn-action">ANALYZE NOW</button>
                     </form>
                 </div>

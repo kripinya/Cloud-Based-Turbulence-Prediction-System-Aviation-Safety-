@@ -1,20 +1,25 @@
-# predict.py
+# predict.py — CLI prediction utility
 import sys
 import pandas as pd
 from joblib import load
 import numpy as np
 import os
 
-SCALER = "model_artifacts/scaler.joblib"
-MODEL  = "model_artifacts/rf_model.joblib"
+# Resolve paths relative to project root (one level up from api/)
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SCALER = os.path.join(_PROJECT_ROOT, "model_artifacts", "scaler.joblib")
+MODEL  = os.path.join(_PROJECT_ROOT, "model_artifacts", "rf_model.joblib")
+
+# Canonical feature set — must match training/utils.py
+EXPECTED_FEATURES = [
+    "wind_speed_10m", "wind_speed_100m", "wind_shear",
+    "relative_humidity_2m", "cloud_cover", "surface_pressure", "dewpt_dep"
+]
 
 def get_expected_features(scaler):
-    # If scaler was fitted on a DataFrame, it often has feature_names_in_
     if hasattr(scaler, "feature_names_in_"):
         return list(scaler.feature_names_in_)
-    # fallback to common default (six features used earlier)
-    return ["wind_speed_10m","wind_speed_100m","wind_shear",
-            "relative_humidity_2m","cloud_cover","surface_pressure"]
+    return EXPECTED_FEATURES
 
 def predict_dataframe(df):
     scaler = load(SCALER)
@@ -26,7 +31,7 @@ def predict_dataframe(df):
     if missing:
         raise ValueError(f"Input is missing required feature columns: {missing}")
 
-    X = df[features].values
+    X = df[features]
     Xs = scaler.transform(X)
     preds = model.predict(Xs)
     probs = model.predict_proba(Xs)

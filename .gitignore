@@ -22,6 +22,7 @@ model_artifacts/
 
 # Data files
 *.csv
+!sample_input.csv
 *.csv.gz
 mosdac_data/
 processed_csv/
