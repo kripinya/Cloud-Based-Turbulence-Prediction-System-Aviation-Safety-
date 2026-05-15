@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual Environment
+venv/
+.venv/
+pyvenv.cfg
+turbulence-venv/
+
+# Model artifacts (track in releases, not git)
+*.joblib
+*.pkl
+*.h5
+*.hdf5
+model_artifacts/
+
+# Data files
+*.csv
+*.csv.gz
+mosdac_data/
+processed_csv/
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Backup files
+*.bak
+*.bak.*
+
+# Terminal/session dumps
+ec2 instance.txt
+local terminal.txt
+
+# Generated/build artifacts
+*.tar.gz
+*.tar.gz.sha256
+*.sha256
+
+# Docker
+docker-compose.override.yml
+
+# Project report (use releases instead)
+*.pdf
+
+# Dangerous stdlib shadow
+pkgutil.py
+
+# Misc junk
+PY
