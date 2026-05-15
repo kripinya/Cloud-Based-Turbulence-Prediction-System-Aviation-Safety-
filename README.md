@@ -43,17 +43,48 @@ The system features a state-of-the-art **Interactive Dashboard** (Glassmorphism 
 
 ## 3. Technical Implementation & Features
 
+### System Architecture
+
+```mermaid
+graph TD
+    subgraph "Data Sources"
+        A[".h5 Satellite Files"] -->|/process-h5| B(HDF5 Processor)
+        C["Batch .csv Files"] -->|/predict-batch| D(API Engine)
+        E["Manual Input"] -->|/predict| D
+        F["MOSDAC Real-time"] -->|/mosdac-ingest| G(Live Streamer)
+    end
+
+    subgraph "Core Backend"
+        B -->|Flattened Data| D
+        G -->|Simulated Packets| D
+        D -->|Feature Engineering| H[StandardScaler]
+        H -->|Scaled Features| I[Random Forest Classifier]
+        I --> J{Low / Moderate / Severe}
+    end
+
+    subgraph "Feature Pipeline"
+        K[wind_speed_10m, wind_speed_100m] -->|abs diff| L[wind_shear]
+        M[temperature_2m, dewpoint_2m] -->|subtract| N[dewpt_dep]
+        O[relative_humidity_2m, cloud_cover, surface_pressure] --> P[Direct Features]
+    end
+```
+
 ### Machine Learning Engine
-*   **Model**: Random Forest Classifier trained on expanded meteorological datasets.
-*   **Feature Engineering**: The system automatically derives critical indicators:
-    *   **Wind Shear**: Calculated as the absolute difference between wind speeds at 100m and 10m.
-    *   **Dewpoint Depression (Dewpt Dep.)**: The difference between Temperature and Dewpoint, a key indicator of atmospheric stability and moisture-driven vertical movement.
-*   **Inference Pipeline**: Built to handle both numerical and categorical outputs with a dynamic label mapper.
+*   **Model**: Random Forest Classifier (300 estimators, balanced class weights).
+*   **Training**: Multi-location ERA5 data (5 Indian airports, 6 months) with **5-fold stratified cross-validation**.
+*   **Feature Engineering**: Automatically derives critical indicators:
+    *   **Wind Shear**: `|wind_speed_100m − wind_speed_10m|`
+    *   **Dewpoint Depression**: `temperature_2m − dewpoint_2m`
+*   **Labeling**: Physics-based Turbulence Potential Index (TPI):
+    ```
+    TPI = 0.40 × wind_shear + 0.25 × (100 − humidity) + 0.20 × cloud_cover + 0.15 × dewpt_dep
+    ```
+    Thresholds: Low (TPI < 12), Moderate (12–28), Severe (≥ 28).
+*   **Input Validation**: Range checks on all meteorological features with clear warnings.
 
 ### The Backend Architecture
 *   **API**: Flask-based RESTful service optimized for high-concurrency with Gunicorn.
-*   **Compatibility**: Includes a unique shim for **Python 3.14+** support, handling standard library attribute changes (`pkgutil.get_loader`).
-*   **Containerization**: Fully Dockerized for seamless movement between local development and Cloud (AWS) environments.
+*   **Containerization**: Fully Dockerized for seamless movement between local development and Cloud environments.
 
 ---
 
@@ -74,6 +105,9 @@ The system features a state-of-the-art **Interactive Dashboard** (Glassmorphism 
 │   ├── read_mosdac_stream.py     # Streaming HDF5 reader
 │   ├── process_mosdac_perfile.py # Per-file HDF5 processor
 │   └── simulate_stream.py       # API stream simulation
+├── tests/                        # Unit test suite
+│   ├── test_api.py               # API endpoint & validation tests
+│   └── test_training.py          # Feature engineering tests
 ├── model_artifacts/              # Trained model files (.gitignored)
 ├── Dockerfile                    # Production container build
 ├── .dockerignore
@@ -125,7 +159,27 @@ docker run -d -p 8080:8080 --name turbulence-api-container turbulence-api
 
 ---
 
-## 7. Future Roadmap
-*   **AWS Deployment**: Migration to ECS with Auto-scaling and S3-based artifact storage.
+## 7. Testing
+
+The project includes a comprehensive test suite (24 tests) covering API endpoints, input validation, and training utilities.
+
+```bash
+# Install test dependencies
+pip install pytest
+
+# Run all tests
+pytest tests/ -v
+```
+
+| Test Module | Coverage |
+| :--- | :--- |
+| `test_api.py` | Health, dashboard, validation, prediction (single/multi/error), feature engineering |
+| `test_training.py` | Feature columns, label generation, NaN handling, data integrity |
+
+---
+
+## 8. Future Roadmap
+*   **Cloud Deployment**: Migration to AWS ECS / GCP Cloud Run with auto-scaling and S3-based artifact storage.
 *   **Dynamic GIS Overlay**: Integrating mapping libraries to visualize results over geographic flight paths.
-*   **Deep Learning (LSTM)**: Incorporating temporal sequences for improved forecasting Accuracy.
+*   **Deep Learning (LSTM)**: Incorporating temporal sequences for improved forecasting accuracy.
+*   **Real MOSDAC Integration**: Replacing mock client with authenticated MOSDAC API access.

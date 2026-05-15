@@ -66,11 +66,47 @@ except Exception as e:
     MODEL = None
     SCALER = None
 
-# Features exptected by the model
+# Features expected by the model
 EXPECTED_FEATURES = ["wind_speed_10m", "wind_speed_100m", "wind_shear", "relative_humidity_2m", "cloud_cover", "surface_pressure", "dewpt_dep"]
 
 # Helpful label map - change if your labels differ
 LABEL_MAP = {0: "Low", 1: "Moderate", 2: "Severe"}
+
+# Validation: acceptable ranges for meteorological features
+FEATURE_RANGES = {
+    "wind_speed_10m":       (0, 80),      # m/s
+    "wind_speed_100m":      (0, 120),     # m/s
+    "wind_shear":           (0, 100),     # m/s (derived)
+    "relative_humidity_2m": (0, 100),     # %
+    "cloud_cover":          (0, 100),     # %
+    "surface_pressure":     (800, 1100),  # hPa
+    "dewpt_dep":            (-20, 60),    # °C
+    "temperature_2m":       (-60, 60),    # °C
+    "dewpoint_2m":          (-80, 40),    # °C
+}
+
+MAX_BATCH_ROWS = 10000  # prevent abuse on batch endpoints
+
+
+def validate_dataframe(df: pd.DataFrame) -> list:
+    """Validate input DataFrame. Returns list of warning strings (empty = all OK)."""
+    warnings = []
+    if df.empty:
+        return ["Input data is empty."]
+    if len(df) > MAX_BATCH_ROWS:
+        return [f"Too many rows ({len(df)}). Maximum is {MAX_BATCH_ROWS}."]
+
+    for col in df.columns:
+        if col in FEATURE_RANGES:
+            lo, hi = FEATURE_RANGES[col]
+            vals = pd.to_numeric(df[col], errors="coerce")
+            out_of_range = ((vals < lo) | (vals > hi)) & vals.notna()
+            if out_of_range.any():
+                count = out_of_range.sum()
+                warnings.append(
+                    f"Column '{col}': {count} value(s) outside expected range [{lo}, {hi}]."
+                )
+    return warnings
 
 def df_from_request(req) -> pd.DataFrame:
     """Accept JSON array of records or file upload (CSV or gzipped CSV) or form fields."""
@@ -317,6 +353,11 @@ def predict():
     except Exception as e:
         return jsonify({"error": f"Could not parse input: {e}"}), 400
 
+    # Input validation
+    validation_warnings = validate_dataframe(df)
+    if validation_warnings and df.empty:
+        return jsonify({"error": validation_warnings[0]}), 400
+
     # Keep original index mapping
     original_index = df.index.tolist()
 
@@ -411,7 +452,10 @@ def predict():
             rec["probs"] = [float(x) for x in probs[i]]
         out.append(rec)
 
-    return jsonify({"n_rows": len(out), "results": out}), 200
+    response = {"n_rows": len(out), "results": out}
+    if validation_warnings:
+        response["warnings"] = validation_warnings
+    return jsonify(response), 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT, debug=True)
